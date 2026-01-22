@@ -1,6 +1,7 @@
 const { requireAuth, isAdmin } = require("../_lib/auth");
 const { getUserStore } = require("../_lib/store");
 const { json, error, withErrorHandling } = require("../_lib/response");
+const { asArray, asObject } = require("./_lib/utils");
 
 exports.handler = withErrorHandling(async (event) => {
   const { user, error: authError } = requireAuth(event);
@@ -11,9 +12,9 @@ exports.handler = withErrorHandling(async (event) => {
   const store = getUserStore(userId);
   const profile = await store.get("profile");
   const program = await store.get("program");
-  const workouts = (await store.get("workouts")) || {};
-  const prs = (await store.get("prs")) || [];
-  const workoutLogs = (await store.get("workoutLogs")) || {};
+  const workouts = asObject(await store.get("workouts"), {});
+  const prs = asArray(await store.get("prs"), []);
+  const workoutLogs = asObject(await store.get("workoutLogs"), {});
   const today = new Date().toISOString().split("T")[0];
   const todayWorkout = workouts[today] || null;
   return json(200, {

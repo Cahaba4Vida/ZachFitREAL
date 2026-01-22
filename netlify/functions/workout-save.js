@@ -1,7 +1,7 @@
 const { requireAuth } = require("./_lib/auth");
 const { getUserStore } = require("./_lib/store");
 const { json, error, withErrorHandling } = require("./_lib/response");
-const { parseBody } = require("./_lib/utils");
+const { parseBody, asObject } = require("./_lib/utils");
 const { validateSchema } = require("./_lib/schema");
 
 exports.handler = withErrorHandling(async (event) => {
@@ -14,7 +14,7 @@ exports.handler = withErrorHandling(async (event) => {
   const { valid } = validateSchema("workoutDay", body.workout);
   if (!valid) return error(400, "Invalid workout schema");
   const store = getUserStore(user.userId);
-  const workouts = (await store.get("workouts")) || {};
+  const workouts = asObject(await store.get("workouts"), {});
   workouts[date] = { ...body.workout, date };
   await store.set("workouts", workouts);
   return json(200, workouts[date]);

@@ -1,7 +1,7 @@
 const { requireAuth } = require("./_lib/auth");
 const { getUserStore } = require("./_lib/store");
 const { json, error, withErrorHandling } = require("./_lib/response");
-const { parseBody, nowIso } = require("./_lib/utils");
+const { parseBody, nowIso, asArray } = require("./_lib/utils");
 
 const buildSystemPrompt = (mode) => {
   if (mode === "program_refine") {
@@ -33,23 +33,41 @@ exports.handler = withErrorHandling(async (event) => {
       },
     ],
   };
-  const response = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
-  });
+  // Protect against long-hanging upstream requests (Netlify functions commonly timeout around ~30s).
+  const controller = new AbortController();
+  const timeoutMs = 25000;
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+  let response;
+  try {
+    response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+    });
+  } catch (err) {
+    if (err?.name === "AbortError") {
+      return error(504, "AI request timed out", null, { reason: "AI_TIMEOUT" });
+    }
+    return error(500, "AI request failed", err?.message || null, { reason: "AI_FETCH_FAILED" });
+  } finally {
+    clearTimeout(timeout);
+  }
+
   if (!response.ok) {
     const detail = await response.text();
-    return error(500, detail);
+    return error(502, "AI upstream error", detail, { reason: "AI_UPSTREAM" });
   }
+
   const data = await response.json();
   const message = data.choices?.[0]?.message?.content || "";
   if (body.mode === "today_adjust") {
     const store = getUserStore(user.userId);
-    const revisions = (await store.get("todayAdjustRevisions")) || [];
+    const revisions = asArray(await store.get("todayAdjustRevisions"), []);
     const entry = {
       createdAt: nowIso(),
       prompt: body.prompt,

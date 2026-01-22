@@ -27,7 +27,7 @@ const json = (statusCode, body, options = {}) => ({
 const error = (statusCode, message, details, options = {}) =>
   json(
     statusCode,
-    { error: message, details, statusCode, traceId: options.traceId, requestId: options.traceId, ...(options.reason ? { reason: options.reason } : {}) },
+    { error: message, details, statusCode, traceId: options.traceId, requestId: options.traceId, ...(options.reason ? { reason: options.reason } : {}), ...(options.stage ? { stage: options.stage } : {}) },
     options
   );
 
@@ -67,6 +67,7 @@ const ensureErrorEnvelope = (response, traceId) => {
       statusCode: response.statusCode,
       traceId,
       requestId: traceId,
+      ...(body.stage ? { stage: body.stage } : {}),
     }),
   };
 };
@@ -86,6 +87,7 @@ const withErrorHandling = (handler) => async (event, context) => {
       {
         error: message,
         details: err?.details || null,
+        ...(err?.stage ? { stage: err.stage } : {}),
         statusCode: 500,
         traceId,
         requestId: traceId,

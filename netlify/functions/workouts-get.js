@@ -29,7 +29,7 @@ exports.handler = withErrorHandling(async (event) => {
   const { user, error } = await requireAuth(event);
   if (error) return error;
   const store = getUserStore(user.userId);
-  let workouts = (await store.get("workouts")) || {};
+  let workouts = asObject(await store.get("workouts"), {});
   if (Object.keys(workouts).length === 0) {
     const program = await store.get("program");
     if (program) {

@@ -1,15 +1,19 @@
 const { requireAuth, isAdmin } = require("./_lib/auth");
 const { getUserStore, getGlobalStore } = require("./_lib/store");
 const { json, withErrorHandling } = require("./_lib/response");
-const { nowIso } = require("./_lib/utils");
+const { nowIso, asArray, asObject } = require("./_lib/utils");
 
 exports.handler = withErrorHandling(async (event) => {
+  let stage = "init";
+  try {
   const { user, error } = await requireAuth(event);
   if (error) return error;
   const store = getUserStore(user.userId);
-  const profile = (await store.get("profile")) || { units: "lb" };
+  stage = "load_profile";
+  const profile = asObject(await store.get("profile"), { units: "lb" });
   const globalStore = getGlobalStore();
-  const clients = (await globalStore.get("clients")) || [];
+  stage = "load_clients";
+  const clients = asArray(await globalStore.get("clients"), []);
   const nextClients = [
     {
       userId: user.userId,
@@ -19,6 +23,7 @@ exports.handler = withErrorHandling(async (event) => {
     },
     ...clients.filter((client) => client.userId !== user.userId),
   ].slice(0, 200);
+  stage = "save_clients";
   await globalStore.set("clients", nextClients);
   return json(200, {
     user: {
@@ -28,4 +33,8 @@ exports.handler = withErrorHandling(async (event) => {
     },
     profile,
   });
+  } catch (err) {
+    err.stage = stage;
+    throw err;
+  }
 });

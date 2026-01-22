@@ -1,7 +1,7 @@
 const { requireAuth } = require("./_lib/auth");
 const { getUserStore } = require("./_lib/store");
 const { json, error, withErrorHandling } = require("./_lib/response");
-const { parseBody } = require("./_lib/utils");
+const { parseBody, asArray } = require("./_lib/utils");
 const { validateSchema } = require("./_lib/schema");
 
 const estimate1Rm = (weight, reps) => Math.round(weight * (1 + reps / 30));
@@ -22,7 +22,7 @@ exports.handler = withErrorHandling(async (event) => {
   const { valid } = validateSchema("prEntry", entry);
   if (!valid) return error(400, "Invalid PR schema");
   const store = getUserStore(user.userId);
-  const prs = (await store.get("prs")) || [];
+  const prs = asArray(await store.get("prs"), []);
   const next = [entry, ...prs].slice(0, 50);
   await store.set("prs", next);
   return json(200, entry);
