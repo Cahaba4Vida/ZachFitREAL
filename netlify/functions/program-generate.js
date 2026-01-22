@@ -1,6 +1,7 @@
 const { requireAuth } = require("./_lib/auth");
 const { getUserStore } = require("./_lib/store");
-const { query } = require("./_lib/db");
+// Avoid destructuring so we never end up with an unbound identifier in edge cases.
+const db = require("./_lib/db");
 const { json, error, withErrorHandling } = require("./_lib/response");
 const { parseBody, nowIso, asArray } = require("./_lib/utils");
 const { validateSchema } = require("./_lib/schema");
@@ -32,7 +33,7 @@ exports.handler = withErrorHandling(async (event) => {
   const { valid: programValid } = validateSchema("program", program);
   if (!programValid) return error(400, "Program schema invalid");
   stage = "db_save_onboarding";
-  await query(
+  await db.query(
     `INSERT INTO onboarding (user_id, data, created_at, updated_at)
      VALUES ($1, $2, NOW(), NOW())
      ON CONFLICT (user_id)
@@ -40,7 +41,7 @@ exports.handler = withErrorHandling(async (event) => {
     [user.userId, body.onboarding]
   );
   stage = "db_save_program";
-  await query(
+  await db.query(
     `INSERT INTO programs (user_id, program, status, created_at, updated_at)
      VALUES ($1, $2, $3, NOW(), NOW())
      ON CONFLICT (user_id)

@@ -186,7 +186,6 @@ const getUser = async (event) => {
   }
 };
 
-};
 
 const requireAuth = async (event) => {
   const user = await getUser(event);
@@ -199,9 +198,6 @@ const requireAuth = async (event) => {
   return { user };
 };
 
-  }
-  return { user };
-};
 
 const isAdmin = (user) => {
   const allowlist =
