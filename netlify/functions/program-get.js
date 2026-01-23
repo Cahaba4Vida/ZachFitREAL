@@ -1,11 +1,11 @@
 const { requireAuth } = require("./_lib/auth");
 const { json, withErrorHandling } = require("./_lib/response");
-const { query } = require("./_lib/db");
+const db = require("./_lib/db");
 
 exports.handler = withErrorHandling(async (event) => {
   const { user, error } = await requireAuth(event);
   if (error) return error;
-  const result = await query(
+  const result = await db.query(
     `SELECT program, status
      FROM programs
      WHERE user_id = $1

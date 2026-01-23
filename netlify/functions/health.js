@@ -1,8 +1,9 @@
 const { json, withErrorHandling, getTraceId } = require("./_lib/response");
-const { getPool, query } = require("./_lib/db");
+const db = require("./_lib/db");
+const getPool = db.getPool;
 
 const checkTablesExist = async (tableNames) => {
-  const result = await query(
+  const result = await db.query(
     `SELECT table_name
      FROM information_schema.tables
      WHERE table_schema = 'public' AND table_name = ANY($1)`,
@@ -16,7 +17,7 @@ const checkTablesExist = async (tableNames) => {
 };
 
 const checkKvConstraint = async () => {
-  const result = await query(
+  const result = await db.query(
     `SELECT constraint_name, constraint_type
      FROM information_schema.table_constraints
      WHERE table_schema = 'public'
@@ -24,7 +25,7 @@ const checkKvConstraint = async () => {
        AND constraint_type IN ('PRIMARY KEY', 'UNIQUE')`
   );
   if (result.rows.length === 0) return false;
-  const keyResult = await query(
+  const keyResult = await db.query(
     `SELECT tc.constraint_name, kcu.column_name
      FROM information_schema.table_constraints tc
      JOIN information_schema.key_column_usage kcu
@@ -46,7 +47,7 @@ const checkKvConstraint = async () => {
 };
 
 const checkProgramsColumns = async () => {
-  const result = await query(
+  const result = await db.query(
     `SELECT column_name
      FROM information_schema.columns
      WHERE table_schema = 'public' AND table_name = 'programs'`
@@ -79,7 +80,7 @@ exports.handler = withErrorHandling(async (event) => {
 
   try {
     const pool = getPool();
-    await pool.query("SELECT 1");
+    await pool.db.query("SELECT 1");
     checks.postgresConnection = true;
   } catch (err) {
     return json(200, { ok: false, checks, traceId, timestamp });

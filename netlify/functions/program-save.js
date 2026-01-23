@@ -2,7 +2,7 @@ const { requireAuth } = require("./_lib/auth");
 const { getUserStore } = require("./_lib/store");
 const { json, error, withErrorHandling } = require("./_lib/response");
 const { parseBody, nowIso, asArray } = require("./_lib/utils");
-const { query } = require("./_lib/db");
+const db = require("./_lib/db");
 const { validateSchema } = require("./_lib/schema");
 
 exports.handler = withErrorHandling(async (event) => {
@@ -16,7 +16,7 @@ exports.handler = withErrorHandling(async (event) => {
   };
   const { valid } = validateSchema("program", program);
   if (!valid) return error(400, "Program schema invalid");
-  await query(
+  await db.query(
     `INSERT INTO programs (user_id, program, status, created_at, updated_at)
      VALUES ($1, $2, $3, NOW(), NOW())
      ON CONFLICT (user_id)

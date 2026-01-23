@@ -2,7 +2,7 @@ const { requireAuth } = require("./_lib/auth");
 const { getUserStore, getGlobalStore } = require("./_lib/store");
 const { json, error, withErrorHandling } = require("./_lib/response");
 const { parseBody, nowIso, asArray, asObject } = require("./_lib/utils");
-const { query } = require("./_lib/db");
+const db = require("./_lib/db");
 const { validateSchema } = require("./_lib/schema");
 
 exports.handler = withErrorHandling(async (event) => {
@@ -31,7 +31,7 @@ exports.handler = withErrorHandling(async (event) => {
   await store.set("profile", profile);
   if (body.onboarding) {
     stage = "db_save_onboarding";
-    await query(
+    await db.query(
       `INSERT INTO onboarding (user_id, data, created_at, updated_at)
        VALUES ($1, $2, NOW(), NOW())
        ON CONFLICT (user_id)

@@ -1,7 +1,7 @@
 const { requireAuth } = require("./_lib/auth");
 const { getUserStore } = require("./_lib/store");
 const { json, error, withErrorHandling } = require("./_lib/response");
-const { query } = require("./_lib/db");
+const db = require("./_lib/db");
 const { asArray } = require("./_lib/utils");
 
 exports.handler = withErrorHandling(async (event) => {
@@ -14,7 +14,7 @@ exports.handler = withErrorHandling(async (event) => {
   }
   const [, previous, ...rest] = revisions;
   const nextRevisions = [previous, ...rest];
-  await query(
+  await db.query(
     `UPDATE programs
      SET program = $1, status = $2, updated_at = NOW()
      WHERE user_id = $3`,

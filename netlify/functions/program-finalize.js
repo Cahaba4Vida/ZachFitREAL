@@ -2,7 +2,7 @@ const { requireAuth } = require("./_lib/auth");
 const { getUserStore } = require("./_lib/store");
 const { json, error, withErrorHandling } = require("./_lib/response");
 const { nowIso, asArray } = require("./_lib/utils");
-const { query } = require("./_lib/db");
+const db = require("./_lib/db");
 const { validateSchema } = require("./_lib/schema");
 
 exports.handler = withErrorHandling(async (event) => {
@@ -11,7 +11,7 @@ exports.handler = withErrorHandling(async (event) => {
   const { user, error: authError } = await requireAuth(event);
   if (authError) return authError;
   stage = "db_load_program";
-  const result = await query(
+  const result = await db.query(
     `SELECT program
      FROM programs
      WHERE user_id = $1
@@ -25,7 +25,7 @@ exports.handler = withErrorHandling(async (event) => {
   const { valid } = validateSchema("program", finalized);
   if (!valid) return error(400, "Program schema invalid");
   stage = "db_finalize_program";
-  await query(
+  await db.query(
     `UPDATE programs
      SET program = $1, status = $2, updated_at = NOW()
      WHERE user_id = $3`,

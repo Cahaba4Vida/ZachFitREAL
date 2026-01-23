@@ -1,17 +1,16 @@
-const { query } = require("./db");
-
+const db = require("./db");
 const getUserStore = (userId) => {
   const namespace = `user:${userId}`;
   return {
     get: async (key) => {
-      const result = await query(
+      const result = await db.query(
         "SELECT value FROM kv_store WHERE namespace = $1 AND key = $2",
         [namespace, key]
       );
       return result.rows[0]?.value ?? null;
     },
     set: async (key, value) => {
-      await query(
+      await db.query(
         `INSERT INTO kv_store (namespace, key, value, updated_at)
          VALUES ($1, $2, $3, NOW())
          ON CONFLICT (namespace, key)
@@ -20,10 +19,10 @@ const getUserStore = (userId) => {
       );
     },
     delete: async (key) => {
-      await query("DELETE FROM kv_store WHERE namespace = $1 AND key = $2", [namespace, key]);
+      await db.query("DELETE FROM kv_store WHERE namespace = $1 AND key = $2", [namespace, key]);
     },
     list: async (prefix) => {
-      const result = await query(
+      const result = await db.query(
         "SELECT key FROM kv_store WHERE namespace = $1 AND key LIKE $2 ORDER BY key ASC",
         [namespace, `${prefix}%`]
       );
@@ -36,14 +35,14 @@ const getGlobalStore = () => {
   const namespace = "global";
   return {
     get: async (key) => {
-      const result = await query(
+      const result = await db.query(
         "SELECT value FROM kv_store WHERE namespace = $1 AND key = $2",
         [namespace, key]
       );
       return result.rows[0]?.value ?? null;
     },
     set: async (key, value) => {
-      await query(
+      await db.query(
         `INSERT INTO kv_store (namespace, key, value, updated_at)
          VALUES ($1, $2, $3, NOW())
          ON CONFLICT (namespace, key)
@@ -52,7 +51,7 @@ const getGlobalStore = () => {
       );
     },
     list: async (prefix) => {
-      const result = await query(
+      const result = await db.query(
         "SELECT key FROM kv_store WHERE namespace = $1 AND key LIKE $2 ORDER BY key ASC",
         [namespace, `${prefix}%`]
       );
