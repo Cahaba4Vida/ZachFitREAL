@@ -602,8 +602,10 @@ const initIdentity = () => {
     await refreshAuthToken();
     updateUserChip();
     if (user) {
-      loadWhoAmI().catch(console.error);
-      loadProfile().then(populateOnboardingForm).catch(console.error);
+      loadWhoAmI().catch((err) => handleActionError("Load account", err));
+      loadProfile()
+        .then(populateOnboardingForm)
+        .catch((err) => handleActionError("Load profile", err));
     }
   });
   window.netlifyIdentity.on("login", async (user) => {
@@ -611,8 +613,10 @@ const initIdentity = () => {
     await refreshAuthToken();
     updateUserChip();
     window.location.hash = "#/app";
-    loadWhoAmI().catch(console.error);
-    loadProfile().then(populateOnboardingForm).catch(console.error);
+    loadWhoAmI().catch((err) => handleActionError("Load account", err));
+    loadProfile()
+      .then(populateOnboardingForm)
+      .catch((err) => handleActionError("Load profile", err));
     apiFetch("/api/audit-log-event", {
       method: "POST",
       body: JSON.stringify({ type: "login", detail: "User logged in" }),
@@ -642,16 +646,16 @@ const handleRoute = () => {
   }
   showView(name);
   if (name === "app" && state.user) {
-    loadProgram().catch(console.error);
+    loadProgram().catch((err) => handleActionError("Load program", err));
   }
   if (name === "workouts" && state.user) {
-    loadWorkouts().catch(console.error);
+    loadWorkouts().catch((err) => handleActionError("Load workouts", err));
   }
   if (name === "prs" && state.user) {
-    loadPrs().catch(console.error);
+    loadPrs().catch((err) => handleActionError("Load PRs", err));
   }
   if (name === "admin" && state.user) {
-    loadAdminClients().catch(console.error);
+    loadAdminClients().catch((err) => handleActionError("Load clients", err));
   }
 };
 
@@ -772,18 +776,30 @@ const setupListeners = () => {
     elements.todayChatResponse.textContent = "";
   });
   bindListener(elements.addPr, "click", async () => {
-    const formData = new FormData(elements.prForm);
-    const pr = Object.fromEntries(formData.entries());
-    pr.weight = Number(pr.weight);
-    pr.reps = Number(pr.reps);
-    pr.rpe = pr.rpe ? Number(pr.rpe) : null;
-    await apiFetch("/api/pr-add", { method: "POST", body: JSON.stringify(pr) });
-    await loadPrs();
+    const label = "Add PR";
+    try {
+      const formData = new FormData(elements.prForm);
+      const pr = Object.fromEntries(formData.entries());
+      pr.weight = Number(pr.weight);
+      pr.reps = Number(pr.reps);
+      pr.rpe = pr.rpe ? Number(pr.rpe) : null;
+      await apiFetch("/api/pr-add", { method: "POST", body: JSON.stringify(pr) });
+      await loadPrs();
+      showToast("PR added.", "success");
+    } catch (err) {
+      handleActionError(label, err);
+    }
   });
   bindListener(elements.unitsToggle, "change", async (event) => {
+    const label = "Update units";
     if (!ensureAuth()) return;
-    await saveProfile({ units: event.target.value });
-    await loadPrs();
+    try {
+      await saveProfile({ units: event.target.value });
+      await loadPrs();
+      showToast("Units updated.", "success");
+    } catch (err) {
+      handleActionError(label, err);
+    }
   });
   window.addEventListener("hashchange", handleRoute);
   elements.resetPassword = document.getElementById("reset-password");

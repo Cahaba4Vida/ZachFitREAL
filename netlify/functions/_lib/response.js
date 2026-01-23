@@ -27,7 +27,15 @@ const json = (statusCode, body, options = {}) => ({
 const error = (statusCode, message, details, options = {}) =>
   json(
     statusCode,
-    { error: message, details, statusCode, traceId: options.traceId, requestId: options.traceId, ...(options.reason ? { reason: options.reason } : {}), ...(options.stage ? { stage: options.stage } : {}) },
+    {
+      error: message,
+      details,
+      statusCode,
+      traceId: options.traceId,
+      requestId: options.traceId,
+      ...(options.reason ? { reason: options.reason } : {}),
+      ...(options.stage ? { stage: options.stage } : {}),
+    },
     options
   );
 
@@ -80,15 +88,17 @@ const withErrorHandling = (handler) => async (event, context) => {
     const withHeaders = ensureTraceHeaders(response, traceId);
     return ensureErrorEnvelope(withHeaders, traceId);
   } catch (err) {
+    const statusCode = err?.statusCode || 500;
     const message = err?.message || "Internal server error";
     console.error(`[trace ${traceId}]`, message);
     return json(
-      500,
+      statusCode,
       {
         error: message,
         details: err?.details || null,
+        ...(err?.reason ? { reason: err.reason } : {}),
         ...(err?.stage ? { stage: err.stage } : {}),
-        statusCode: 500,
+        statusCode,
         traceId,
         requestId: traceId,
       },
