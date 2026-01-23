@@ -18,7 +18,10 @@ const getPool = () => {
   if (!pool) {
     const connectionString = process.env.DATABASE_URL;
     if (!connectionString) {
-      throw new Error("Database connection not configured");
+      const err = new Error("Database connection not configured");
+      err.statusCode = 503;
+      err.reason = "DB_NOT_CONFIGURED";
+      throw err;
     }
     const ssl = shouldUseSsl(connectionString)
       ? { rejectUnauthorized: false }
@@ -31,19 +34,25 @@ const getPool = () => {
 const categorizeDbError = (error) => {
   const code = error?.code;
   const message = error?.message || "";
-  if (code === "28P01") return "Database authentication failed";
-  if (code === "3D000") return "Database not found";
-  if (code === "42P01") return "Database schema missing";
+  if (code === "28P01") {
+    return { message: "Database authentication failed", statusCode: 503, reason: "DB_AUTH" };
+  }
+  if (code === "3D000") {
+    return { message: "Database not found", statusCode: 503, reason: "DB_NOT_FOUND" };
+  }
+  if (code === "42P01") {
+    return { message: "Database schema missing", statusCode: 500, reason: "DB_SCHEMA" };
+  }
   if (code === "57P01" || code === "57P02" || code === "57P03") {
-    return "Database temporarily unavailable";
+    return { message: "Database temporarily unavailable", statusCode: 503, reason: "DB_UNAVAILABLE" };
   }
   if (message.includes("timeout") || message.includes("ECONNRESET")) {
-    return "Database connection timed out";
+    return { message: "Database connection timed out", statusCode: 503, reason: "DB_TIMEOUT" };
   }
   if (message.includes("ENOTFOUND")) {
-    return "Database host not found";
+    return { message: "Database host not found", statusCode: 503, reason: "DB_HOST" };
   }
-  return "Database query failed";
+  return { message: "Database query failed", statusCode: 500, reason: "DB_QUERY" };
 };
 
 const query = async (text, params) => {
@@ -51,7 +60,15 @@ const query = async (text, params) => {
     const client = getPool();
     return await client.query(text, params);
   } catch (error) {
-    throw new Error(categorizeDbError(error));
+    if (error?.statusCode) {
+      throw error;
+    }
+    const categorized = categorizeDbError(error);
+    const err = new Error(categorized.message);
+    err.statusCode = categorized.statusCode;
+    err.reason = categorized.reason;
+    err.details = { code: error?.code || null };
+    throw err;
   }
 };
 
