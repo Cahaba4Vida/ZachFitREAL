@@ -153,6 +153,22 @@ const apiFetch = async (path, options = {}) => {
   const headers = { ...(requestOptions.headers || {}) };
   const traceId = generateTraceId();
   headers["X-Trace-Id"] = traceId;
+
+  // Ensure we attach a fresh Netlify Identity JWT for protected API calls.
+  // Some routes fire before the identity "init" event sets state.token.
+  if (!state.token) {
+    try {
+      const identity = window.netlifyIdentity;
+      const user = identity?.currentUser ? identity.currentUser() : null;
+      if (user) {
+        state.user = user;
+        await refreshAuthToken();
+      }
+    } catch (e) {
+      // non-fatal; request may still succeed for public endpoints
+    }
+  }
+
   if (state.token) {
     headers.Authorization = `Bearer ${state.token}`;
   }
@@ -163,6 +179,12 @@ const apiFetch = async (path, options = {}) => {
   const text = await response.text();
   const data = parseJson(text);
   const meta = { status: response.status, body: data, traceId };
+  if (response.status === 401) {
+    // Session expired or missing token; force re-auth.
+    state.token = null;
+    state.user = null;
+  }
+
   if (!response.ok) {
     const message =
       typeof data === "object" && data
