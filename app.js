@@ -1,3 +1,37 @@
+
+/* === AUTH_GUARD_PATCH_V1 === */
+function withAuth(run) {
+  const user = window.netlifyIdentity && netlifyIdentity.currentUser();
+  if (!user) {
+    // Not logged in yet: do NOT call protected APIs
+    return false;
+  }
+  user.jwt().then(token => run(token));
+  return true;
+}
+
+function suppressAuthErrorsOnce() {
+  const _fetch = window.fetch;
+  window.fetch = function(url, opts) {
+    return _fetch(url, opts).then(res => {
+      if (res.status === 401 && String(url).includes('/api/')) {
+        // swallow initial unauth errors during unauth state
+        return res;
+      }
+      return res;
+    });
+  }
+}
+
+if (window.netlifyIdentity) {
+  netlifyIdentity.on('login', () => {
+    // Reload once after successful login to ensure token propagation
+    window.location.reload();
+  });
+}
+/* === END AUTH_GUARD_PATCH_V1 === */
+
+
 const state = {
   user: null,
   token: null,
