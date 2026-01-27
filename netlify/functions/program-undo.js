@@ -5,7 +5,7 @@ const db = require("./_lib/db");
 const { asArray } = require("./_lib/utils");
 
 exports.handler = withErrorHandling(async (event) => {
-  const { user, error: authError } = await requireAuth(event);
+  const { user, error: authError } = await requireAuth(event, context);
   if (authError) return authError;
   const store = getUserStore(user.userId);
   const revisions = asArray(await store.get("programRevisions"), []);

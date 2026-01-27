@@ -21,7 +21,7 @@ const createProgram = (inputs) => {
 exports.handler = withErrorHandling(async (event) => {
   let stage = "init";
   try {
-  const { user, error: authError } = await requireAuth(event);
+  const { user, error: authError } = await requireAuth(event, context);
   if (authError) return authError;
   stage = "parse_body";
   const body = parseBody(event);

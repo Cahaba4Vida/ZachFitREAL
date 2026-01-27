@@ -163,12 +163,9 @@ const verifyJwt = async (token) => {
 };
 
 const getTokenFromEvent = (event) => {
-  const headerRaw = event?.headers?.authorization || event?.headers?.Authorization;
-  if (!headerRaw) return null;
-  const header = String(headerRaw).trim();
-  // Accept either "Bearer <token>" (any casing) or a raw JWT.
-  const m = header.match(/^bearer\s+(.+)$/i);
-  return (m ? m[1] : header).trim() || null;
+  const header = event?.headers?.authorization || event?.headers?.Authorization;
+  if (!header) return null;
+  return header.replace("Bearer ", "");
 };
 
 const getUser = async (event) => {
@@ -190,7 +187,14 @@ const getUser = async (event) => {
 };
 
 
-const requireAuth = async (event) => {
+const requireAuth = async (event, context) => {
+  // Fast-path: Netlify validates Identity JWT and provides the user on context.clientContext.user
+  // This avoids issuer/JWKS issues on deploy previews.
+  const ctxUser = context?.clientContext?.user;
+  if (ctxUser && (ctxUser.email || ctxUser.sub)) {
+    return { user: { userId: ctxUser.sub || ctxUser.id || ctxUser.user_id, email: ctxUser.email, token: null } };
+  }
+
   const user = await getUser(event);
   if (!user) {
     return {

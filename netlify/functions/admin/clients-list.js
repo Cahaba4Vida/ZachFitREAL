@@ -4,7 +4,7 @@ const { json, error, withErrorHandling } = require("../_lib/response");
 const { asArray } = require("./_lib/utils");
 
 exports.handler = withErrorHandling(async (event) => {
-  const { user, error: authError } = requireAuth(event);
+  const { user, error: authError } = await requireAuth(event, context);
   if (authError) return authError;
   if (!isAdmin(user)) return error(403, "Forbidden");
   const store = getGlobalStore();

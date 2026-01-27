@@ -6,7 +6,7 @@ const { nowIso, asArray, asObject } = require("./_lib/utils");
 exports.handler = withErrorHandling(async (event) => {
   let stage = "init";
   try {
-  const { user, error } = await requireAuth(event);
+  const { user, error } = await requireAuth(event, context);
   if (error) return error;
   const store = getUserStore(user.userId);
   stage = "load_profile";

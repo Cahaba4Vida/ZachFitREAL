@@ -5,7 +5,7 @@ const { parseBody, nowIso } = require("../_lib/utils");
 const { validateSchema } = require("../_lib/schema");
 
 exports.handler = withErrorHandling(async (event) => {
-  const { user, error: authError } = requireAuth(event);
+  const { user, error: authError } = await requireAuth(event, context);
   if (authError) return authError;
   if (!isAdmin(user)) return error(403, "Forbidden");
   const body = parseBody(event);

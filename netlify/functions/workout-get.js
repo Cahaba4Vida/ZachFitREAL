@@ -4,7 +4,7 @@ const { json, error, withErrorHandling } = require("./_lib/response");
 const { asObject } = require("./_lib/utils");
 
 exports.handler = withErrorHandling(async (event) => {
-  const { user, error: authError } = await requireAuth(event);
+  const { user, error: authError } = await requireAuth(event, context);
   if (authError) return authError;
   const date = event.queryStringParameters?.date;
   if (!date) return error(400, "Missing date");
