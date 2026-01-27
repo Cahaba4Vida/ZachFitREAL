@@ -22,6 +22,8 @@ const elements = {
   logoutBtn: document.getElementById("logout-btn"),
   ctaSignup: document.getElementById("cta-signup"),
   ctaLogin: document.getElementById("cta-login"),
+  authSignup: document.getElementById("auth-signup-btn"),
+  authLogin: document.getElementById("auth-login-btn"),
   planForm: document.getElementById("plan-form"),
   generateProgram: document.getElementById("generate-program"),
   saveOnboarding: document.getElementById("save-onboarding"),
@@ -151,6 +153,22 @@ const apiFetch = async (path, options = {}) => {
   const headers = { ...(requestOptions.headers || {}) };
   const traceId = generateTraceId();
   headers["X-Trace-Id"] = traceId;
+
+  // Ensure we attach a fresh Netlify Identity JWT for protected API calls.
+  // Some routes fire before the identity "init" event sets state.token.
+  if (!state.token) {
+    try {
+      const identity = window.netlifyIdentity;
+      const user = identity?.currentUser ? identity.currentUser() : null;
+      if (user) {
+        state.user = user;
+        await refreshAuthToken();
+      }
+    } catch (e) {
+      // non-fatal; request may still succeed for public endpoints
+    }
+  }
+
   if (state.token) {
     headers.Authorization = `Bearer ${state.token}`;
   }
@@ -161,6 +179,12 @@ const apiFetch = async (path, options = {}) => {
   const text = await response.text();
   const data = parseJson(text);
   const meta = { status: response.status, body: data, traceId };
+  if (response.status === 401) {
+    // Session expired or missing token; force re-auth.
+    state.token = null;
+    state.user = null;
+  }
+
   if (!response.ok) {
     const message =
       typeof data === "object" && data
@@ -184,7 +208,10 @@ const apiFetch = async (path, options = {}) => {
   return returnMeta ? { data, ...meta } : data;
 };
 
-const formatDate = (date = new Date()) => date.toISOString().split("T")[0];
+const formatDate = (date = new Date()) => {
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+};
 
 const showView = (name) => {
   views.forEach((view) => {
@@ -668,8 +695,14 @@ const setupListeners = () => {
   });
   bindListener(elements.ctaSignup, "click", () => window.netlifyIdentity.open("signup"));
   bindListener(elements.ctaLogin, "click", () => window.netlifyIdentity.open("login"));
+  bindListener(elements.authSignup, "click", () => window.netlifyIdentity.open("signup"));
+  bindListener(elements.authLogin, "click", () => window.netlifyIdentity.open("login"));
   bindListener(elements.generateProgram, "click", async () => {
     const label = "Generate Program";
+    const btn = elements.generateProgram;
+    const prevText = btn?.textContent;
+    if (btn) { btn.disabled = true; btn.textContent = "Working…"; }
+
     const token = await requireAuthToken();
     if (!token || !elements.planForm) return;
     const formData = new FormData(elements.planForm);
@@ -691,10 +724,16 @@ const setupListeners = () => {
       showToast("Program generated.", "success");
     } catch (err) {
       handleActionError(label, err);
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = prevText || "Generate Program"; }
     }
   });
   bindListener(elements.saveOnboarding, "click", async () => {
     const label = "Save Onboarding";
+    const btn = elements.saveOnboarding;
+    const prevText = btn?.textContent;
+    if (btn) { btn.disabled = true; btn.textContent = "Working…"; }
+
     const token = await requireAuthToken();
     if (!token || !elements.planForm) return;
     const formData = new FormData(elements.planForm);
@@ -715,6 +754,8 @@ const setupListeners = () => {
       showToast("Onboarding saved.", "success");
     } catch (err) {
       handleActionError(label, err);
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = prevText || "Save Onboarding"; }
     }
   });
   bindListener(elements.refreshProgram, "click", () => loadProgram());
@@ -759,7 +800,20 @@ const setupListeners = () => {
     const date = formatDate();
     await loadWorkout(date);
   });
-  bindListener(elements.saveWorkout, "click", () => saveWorkoutLog());
+  bindListener(elements.saveWorkout, "click", async () => {
+    const label = "Save Workout";
+    const btn = elements.saveWorkout;
+    const prevText = btn?.textContent;
+    if (btn) { btn.disabled = true; btn.textContent = "Working…"; }
+    try {
+      await saveWorkoutLog();
+      showToast("Workout saved.", "success");
+    } catch (err) {
+      handleActionError(label, err);
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = prevText || "Save Workout"; }
+    }
+  });
   bindListener(elements.todayChatSend, "click", async () => {
     const prompt = elements.todayChatInput.value.trim();
     if (!prompt) return;
@@ -776,10 +830,15 @@ const setupListeners = () => {
     elements.todayChatResponse.textContent = "";
   });
   bindListener(elements.addPr, "click", async () => {
+    const btn = elements.addPr;
+    const prevText = btn?.textContent;
+    if (btn) { btn.disabled = true; btn.textContent = "Working…"; }
+
     const label = "Add PR";
     try {
       const formData = new FormData(elements.prForm);
       const pr = Object.fromEntries(formData.entries());
+      pr.date = formatDate();
       pr.weight = Number(pr.weight);
       pr.reps = Number(pr.reps);
       pr.rpe = pr.rpe ? Number(pr.rpe) : null;
@@ -788,6 +847,8 @@ const setupListeners = () => {
       showToast("PR added.", "success");
     } catch (err) {
       handleActionError(label, err);
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = prevText || "Add PR"; }
     }
   });
   bindListener(elements.unitsToggle, "change", async (event) => {

@@ -16,7 +16,7 @@ exports.handler = withErrorHandling(async (event) => {
     weight: Number(body.weight),
     reps: Number(body.reps),
     rpe: body.rpe ?? null,
-    date: new Date().toISOString().split("T")[0],
+    date: body.date || new Date().toISOString().split("T")[0],
     estimated1Rm: estimate1Rm(Number(body.weight), Number(body.reps)),
   };
   const { valid } = validateSchema("prEntry", entry);
