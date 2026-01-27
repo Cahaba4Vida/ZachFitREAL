@@ -11,11 +11,12 @@ exports.handler = withErrorHandling(async (event) => {
   if (!date) return error(400, "Missing date");
   const body = parseBody(event);
   if (!body?.workout) return error(400, "Missing workout");
-  const { valid } = validateSchema("workoutDay", body.workout);
+  const { date: _ignoredDate, ...workoutNoDate } = body.workout || {};
+  const { valid } = validateSchema("workoutDay", workoutNoDate);
   if (!valid) return error(400, "Invalid workout schema");
   const store = getUserStore(user.userId);
   const workouts = asObject(await store.get("workouts"), {});
-  workouts[date] = { ...body.workout, date };
+  workouts[date] = { ...workoutNoDate, date };
   await store.set("workouts", workouts);
   const logs = asObject(await store.get("workoutLogs"), {});
   logs[date] = { ...body.workout, date };

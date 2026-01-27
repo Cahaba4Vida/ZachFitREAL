@@ -1,4 +1,4 @@
-const SW_VERSION = "0";
+const SW_VERSION = "2026-01-27-1";
 const CACHE_NAME = `zachfitapp-${SW_VERSION}`;
 const APP_SHELL = [
   "/",
@@ -28,6 +28,16 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("fetch", (event) => {
   const { request } = event;
   if (request.method !== "GET") return;
+  try {
+    const url = new URL(request.url);
+    if (url.origin === self.location.origin) {
+      if (url.pathname.startsWith("/api/") || url.pathname.startsWith("/.netlify/")) {
+        return; // never cache API or identity endpoints
+      }
+    }
+  } catch (e) {
+    // ignore
+  }
 
   event.respondWith(
     caches.match(request).then((cached) =>
