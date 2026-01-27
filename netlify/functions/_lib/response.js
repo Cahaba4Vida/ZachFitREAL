@@ -75,6 +75,7 @@ const ensureErrorEnvelope = (response, traceId) => {
       statusCode: response.statusCode,
       traceId,
       requestId: traceId,
+      ...(body.reason ? { reason: body.reason } : {}),
       ...(body.stage ? { stage: body.stage } : {}),
     }),
   };

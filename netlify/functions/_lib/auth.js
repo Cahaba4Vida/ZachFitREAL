@@ -163,9 +163,12 @@ const verifyJwt = async (token) => {
 };
 
 const getTokenFromEvent = (event) => {
-  const header = event?.headers?.authorization || event?.headers?.Authorization;
-  if (!header) return null;
-  return header.replace("Bearer ", "");
+  const headerRaw = event?.headers?.authorization || event?.headers?.Authorization;
+  if (!headerRaw) return null;
+  const header = String(headerRaw).trim();
+  // Accept either "Bearer <token>" (any casing) or a raw JWT.
+  const m = header.match(/^bearer\s+(.+)$/i);
+  return (m ? m[1] : header).trim() || null;
 };
 
 const getUser = async (event) => {

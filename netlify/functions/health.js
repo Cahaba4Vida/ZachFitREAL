@@ -80,7 +80,8 @@ exports.handler = withErrorHandling(async (event) => {
 
   try {
     const pool = getPool();
-    await pool.db.query("SELECT 1");
+    // `getPool()` returns a `pg.Pool` instance (no `.db` property).
+    await pool.query("SELECT 1");
     checks.postgresConnection = true;
   } catch (err) {
     return json(200, { ok: false, checks, traceId, timestamp });
