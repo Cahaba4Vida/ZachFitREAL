@@ -4,7 +4,7 @@ const { json, error, withErrorHandling } = require("./_lib/response");
 const { parseBody, nowIso, asArray } = require("./_lib/utils");
 const { validateSchema } = require("./_lib/schema");
 
-exports.handler = withErrorHandling(async (event) => {
+exports.handler = withErrorHandling(async (event, context) => {
   let stage = "init";
   try {
   const { user, error: authError } = await requireAuth(event, context);

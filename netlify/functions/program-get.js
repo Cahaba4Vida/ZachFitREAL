@@ -2,7 +2,7 @@ const { requireAuth } = require("./_lib/auth");
 const { json, withErrorHandling } = require("./_lib/response");
 const db = require("./_lib/db");
 
-exports.handler = withErrorHandling(async (event) => {
+exports.handler = withErrorHandling(async (event, context) => {
   const { user, error } = await requireAuth(event, context);
   if (error) return error;
   const result = await db.query(

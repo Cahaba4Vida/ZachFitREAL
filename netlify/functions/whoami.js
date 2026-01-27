@@ -3,7 +3,7 @@ const { getUserStore, getGlobalStore } = require("./_lib/store");
 const { json, withErrorHandling } = require("./_lib/response");
 const { nowIso, asArray, asObject } = require("./_lib/utils");
 
-exports.handler = withErrorHandling(async (event) => {
+exports.handler = withErrorHandling(async (event, context) => {
   let stage = "init";
   try {
   const { user, error } = await requireAuth(event, context);

@@ -25,7 +25,7 @@ const buildWorkoutsFromProgram = (program) => {
   return workouts;
 };
 
-exports.handler = withErrorHandling(async (event) => {
+exports.handler = withErrorHandling(async (event, context) => {
   const { user, error } = await requireAuth(event, context);
   if (error) return error;
   const store = getUserStore(user.userId);

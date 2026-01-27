@@ -3,7 +3,7 @@ const { getUserStore } = require("./_lib/store");
 const { json, error, withErrorHandling } = require("./_lib/response");
 const { asObject } = require("./_lib/utils");
 
-exports.handler = withErrorHandling(async (event) => {
+exports.handler = withErrorHandling(async (event, context) => {
   const { user, error: authError } = await requireAuth(event, context);
   if (authError) return authError;
   const date = event.queryStringParameters?.date;

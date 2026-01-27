@@ -18,7 +18,7 @@ const createProgram = (inputs) => {
   };
 };
 
-exports.handler = withErrorHandling(async (event) => {
+exports.handler = withErrorHandling(async (event, context) => {
   let stage = "init";
   try {
   const { user, error: authError } = await requireAuth(event, context);

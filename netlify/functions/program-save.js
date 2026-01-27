@@ -5,7 +5,7 @@ const { parseBody, nowIso, asArray } = require("./_lib/utils");
 const db = require("./_lib/db");
 const { validateSchema } = require("./_lib/schema");
 
-exports.handler = withErrorHandling(async (event) => {
+exports.handler = withErrorHandling(async (event, context) => {
   const { user, error: authError } = await requireAuth(event, context);
   if (authError) return authError;
   const body = parseBody(event);

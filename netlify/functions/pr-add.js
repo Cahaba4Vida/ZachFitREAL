@@ -6,7 +6,7 @@ const { validateSchema } = require("./_lib/schema");
 
 const estimate1Rm = (weight, reps) => Math.round(weight * (1 + reps / 30));
 
-exports.handler = withErrorHandling(async (event) => {
+exports.handler = withErrorHandling(async (event, context) => {
   const { user, error: authError } = await requireAuth(event, context);
   if (authError) return authError;
   const body = parseBody(event);

@@ -58,7 +58,7 @@ const checkProgramsColumns = async () => {
   return { ok: missing.length === 0, missing };
 };
 
-exports.handler = withErrorHandling(async (event) => {
+exports.handler = withErrorHandling(async (event, context) => {
   const traceId = getTraceId(event);
   const checks = {
     databaseUrl: Boolean(process.env.DATABASE_URL),

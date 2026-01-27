@@ -10,7 +10,7 @@ const buildSystemPrompt = (mode) => {
   return "You are a training coach. Provide a minimal JSON update for today's workout. Keep existing format.";
 };
 
-exports.handler = withErrorHandling(async (event) => {
+exports.handler = withErrorHandling(async (event, context) => {
   const { user, error: authError } = await requireAuth(event, context);
   if (authError) return authError;
   const body = parseBody(event);
