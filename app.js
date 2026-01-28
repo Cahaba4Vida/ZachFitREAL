@@ -203,6 +203,19 @@ const apiFetch = async (path, options = {}) => {
     }
   }
 
+  // Ensure we have a fresh JWT for protected endpoints (email-confirm flows can leave state.token unset)
+  if (!state.token) {
+    try {
+      const u = netlifyIdentity.currentUser();
+      if (u && typeof u.jwt === "function") {
+        state.token = await u.jwt();
+      }
+    } catch (e) {
+      // non-fatal; request may still succeed for public endpoints
+    }
+  }
+
+
   if (state.token) {
     headers.Authorization = `Bearer ${state.token}`;
   }
